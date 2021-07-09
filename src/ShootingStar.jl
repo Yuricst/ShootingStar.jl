@@ -3,12 +3,13 @@ module ShootingStar
 
 using LinearAlgebra
 using DifferentialEquations
+using FiniteDiff
 
 
-include("multiple_shooting.jl")
+include("twostage_shooting.jl")
 
 
 
-export two_stage_shooting
+export twostage_shooting
 
 end # module
