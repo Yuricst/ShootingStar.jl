@@ -77,6 +77,9 @@ function twostage_shooting(n_sv::Int, svs::Array, tofs::Array, prob_stm::ODEProb
 	# outer-loop shooting to minimize velocity discontinuity
 	outer_loop_shooting!(x_outer, x_inner, J_inner, Settings)
 
+	println("\nx_outer: $x_outer")
+	println("x_inner: $x_inner\n\n")
+
 	# construct final solution
 	return
 end
@@ -95,7 +98,7 @@ function outer_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSet
 	for i_outer = 1:Settings.maxiter
 
 		# inner-loop shooting to ensure position continuity
-		inner_loop_shooting!(x0_outer, x0_inner, J_inner, Settings)
+		inner_loop_shooting!(x0_outer, x0_inner, J_inner, Settings, true)
 
 		# compute new velocities
 		new_vs = vcat(Settings.v0, x0_inner, Settings.vf)
@@ -110,14 +113,16 @@ function outer_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSet
 
 		# compute J_outer via finite difference
 		function g(x)
-			inner_loop_shooting!(x, x0_inner, J_inner, Settings)
+			inner_loop_shooting!(x, x0_inner, J_inner, Settings, false)
 			return x
 		end
 		J_outer = FiniteDiff.finite_difference_jacobian(g, x0_outer)
 		
 		# least-square update
-		x0_outer = x0_outer -inv(transpose(J_outer)*J_outer) * transpose(J_outer) * new_vs
-
+		print("x0_outer: "); println(length(x0_outer))
+		print("J_outer: "); println(size(J_outer))
+		print("new_vs: "); println(length(new_vs))
+		x0_outer[:] = x0_outer -inv(transpose(J_outer)*J_outer) * transpose(J_outer) * new_vs
 	end
 
 	return
@@ -129,7 +134,7 @@ end
 Inner-loop corrects velocity vectors to ensure position continuity.
 Function mutates `x0_inner`
 """
-function inner_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSettings)
+function inner_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSettings, verbose::Bool=false)
 
 	r_i2_prop = zeros(Settings.nr * (Settings.n-1))
 
@@ -159,14 +164,19 @@ function inner_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSet
 
 		# check breaking condition
 		err = norm(δr_i2)
-		println("Iteration $i_inner ... err: $err")
+		if verbose==true
+			println("Iteration $i_inner ... err: $err")
+			println("x0_inner: $x0_inner")
+		end
 		if err < Settings.tolDC
-			println("Inner-loop achieved tolerance!")
+			if verbose==true
+				println("Inner-loop achieved tolerance!")
+			end
 			break
 		end
 
 		# correct velocity: v_i = v_i_guess - J_inner^-1 * δr_i2
-		x0_inner = x0_inner - inv(J_inner) * δr_i2
+		x0_inner[:] = x0_inner - inv(J_inner) * δr_i2
 
 	end
 
