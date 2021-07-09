@@ -64,9 +64,6 @@ function twostage_shooting(n_sv::Int, svs::Array, tofs::Array, prob_stm::ODEProb
 		x_outer[1+(j-1)*nr:j*nr] = svs[j+1][1:nr]
 	end
 
-	println("\nx_outer: $x_outer")
-	println("x_inner: $x_inner\n\n")
-
 	# construct ShootingSettings
 	Settings = ShootingSettings(n, nr, n_sv, prob_stm, tofs, r0, rf, v0, vf, 
 		method, reltol, abstol, tolDC, tolConv, maxiter, verbosity)
@@ -77,11 +74,16 @@ function twostage_shooting(n_sv::Int, svs::Array, tofs::Array, prob_stm::ODEProb
 	# outer-loop shooting to minimize velocity discontinuity
 	outer_loop_shooting!(x_outer, x_inner, J_inner, Settings)
 
-	println("\nx_outer: $x_outer")
-	println("x_inner: $x_inner\n\n")
+	# re-construct nodes of final solution
+	conv_rs = vcat(r0, x_outer, rf)
+	conv_vs = vcat(x_inner, Settings.vf)
 
-	# construct final solution
-	return
+	nodes_conv = []
+	for i = 1:n
+		sv = vcat( conv_rs[1+(i-1)*nr : i*nr] , conv_vs[1+(i-1)*nr : i*nr] )
+		push!(nodes_conv, sv)
+	end
+	return nodes_conv
 end
 
 

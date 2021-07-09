@@ -29,20 +29,33 @@ X0 = [1.176924090973164, 0.0, -0.060210863312217, 0.0, -0.173836346247689, 0.0]
 
 T = 3.385326412831325
 
-X2 = [1.176924090973164, 0.0, -0.060210863312217, 0.0, -0.173836346247689, 0.0] + 1.e-6*rand(6)
+X2 = [1.176924090973164, 0.0, -0.060210863312217, 0.0, -0.173836346247689, 0.0] + 1.e-12*rand(6)
 
 tspan = (0.0, 0.5T)
 prob = ODEProblem(R3BP.rhs_cr3bp_sv!, X0, tspan, (mu))
-sol = solve(prob, Tsit5(), reltol=1e-11, abstol=1e-11)
-X1 = sol.u[end] + 1.e-6*rand(6)  #+ [0.0, 0.0,-1.e-5, 0.0, -1.e-6, 0.0]
+sol = solve(prob, method, reltol=reltol, abstol=abstol)
+X1 = sol.u[end] + 1.e-12*rand(6)  #+ [0.0, 0.0,-1.e-5, 0.0, -1.e-6, 0.0]
 
 
 ## prepare for two-stage shooting
 n_sv = 6
 tofs = [T/2, T/2]
 svs = [X0, X1, X2]
+n = length(svs)
 
 prob_stm = ODEProblem(R3BP.rhs_cr3bp_svstm!, vcat(X0, reshape(I(6), (36,)))[:], T, (mu))
+nodes_conv = ShootingStar.twostage_shooting(n_sv, svs, tofs, prob_stm)
 
-ShootingStar.twostage_shooting(n_sv, svs, tofs, prob_stm)
+# propagate result
+prob = ODEProblem(R3BP.rhs_cr3bp_sv!, X0, T, (mu))
+function prob_func(prob, i, repeat)
+    remake(prob, u0=nodes_conv[i], tspan=(0.0, tofs[i]))
+end
+
+ensemble_prob = EnsembleProblem(prob, prob_func=prob_func)
+sim = solve(ensemble_prob, method, EnsembleThreads(), trajectories=n-1, reltol=reltol, abstol=abstol);
+
+display(plot(sim, linealpha=0.4, vars=(1,2), flip=false, aspect_ratio=:equal, size=(800,650), c=:orangered,
+     frame_style=:box, gridalpha=0.4, xlabel="x", ylabel="y"))
+println("Done!")
 
