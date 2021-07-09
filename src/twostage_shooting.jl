@@ -90,10 +90,11 @@ end
 Outer-loop finds least-square solution to minimize velocity discontinuity.
 Function mutates `x0_outer`
 """
-function outer_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSettings)
+function outer_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSettings, verbose::Bool=true)
 
 	# initialize old velocities
-	old_vs = vcat(Settings.v0, x0_inner, Settings.vf)
+	old_vs = vcat(x0_inner, Settings.vf)
+	old_cost = 0.0
 
 	for i_outer = 1:Settings.maxiter
 
@@ -101,28 +102,38 @@ function outer_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSet
 		inner_loop_shooting!(x0_outer, x0_inner, J_inner, Settings, true)
 
 		# compute new velocities
-		new_vs = vcat(Settings.v0, x0_inner, Settings.vf)
+		new_vs = vcat(x0_inner, Settings.vf)
 
 		# break if norm of cost stops improving
-		if (norm(old_vs) - norm(new_vs) < Settings.tolConv)
+		dvs = new_vs - old_vs
+		cost = norm(dvs)
+
+		if verbose==true
+			println("Outer iteration $i_outer ... cost: $cost")
+		end
+
+		if (i_outer > 1) && (old_cost - cost < Settings.tolConv)
 			println("Outer-loop achieved tolerance!")
 			break
-		else  # update old velocities
-			old_vs[:] = vcat(Settings.v0, x0_inner, Settings.vf)
 		end
 
 		# compute J_outer via finite difference
-		function g(x)
-			inner_loop_shooting!(x, x0_inner, J_inner, Settings, false)
-			return x
+		function g(x_outer)
+			inner_loop_shooting!(x_outer, x0_inner, J_inner, Settings, false)
+			new_vs = vcat(x0_inner, Settings.vf)
+			return new_vs - old_vs
 		end
 		J_outer = FiniteDiff.finite_difference_jacobian(g, x0_outer)
 		
 		# least-square update
-		print("x0_outer: "); println(length(x0_outer))
-		print("J_outer: "); println(size(J_outer))
-		print("new_vs: "); println(length(new_vs))
+		# print("x0_outer: "); println(length(x0_outer))
+		# print("J_outer: "); println(size(J_outer))
+		# print("new_vs: "); println(length(new_vs))
+
+		# updates
 		x0_outer[:] = x0_outer -inv(transpose(J_outer)*J_outer) * transpose(J_outer) * new_vs
+		old_vs[:] = new_vs
+		old_cost = cost
 	end
 
 	return
@@ -165,12 +176,11 @@ function inner_loop_shooting!(x0_outer, x0_inner, J_inner, Settings::ShootingSet
 		# check breaking condition
 		err = norm(δr_i2)
 		if verbose==true
-			println("Iteration $i_inner ... err: $err")
-			println("x0_inner: $x0_inner")
+			println("   Inner iteration $i_inner ... err: $err")
 		end
 		if err < Settings.tolDC
 			if verbose==true
-				println("Inner-loop achieved tolerance!")
+				println("   Inner-loop achieved tolerance!")
 			end
 			break
 		end
