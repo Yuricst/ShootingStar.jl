@@ -9,5 +9,6 @@ module ShootingStar
     include("problem.jl")
     include("innerloop.jl")
     include("outerloop.jl")
+    include("initialguess.jl")
 
 end # module

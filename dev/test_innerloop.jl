@@ -43,7 +43,8 @@ sol_lpof = solve(
 tf = 2.5
 Nseg = 20
 times = [el for el in LinRange(0.0, tf, Nseg+1)]
-nodes = hcat([[el for el in LinRange(rv0[i], rvf[i], Nseg+1)] for i in 1:6]...)'
+nodes = ShootingStar.initialguess_gradual_transit(rv0, rvf, times, 
+    ShootingStar.rhs_cr3bp_sv!, params_ode)
 
 # create problem
 prob = ShootingStar.TwoStageShootingProblem(
@@ -54,7 +55,6 @@ prob = ShootingStar.TwoStageShootingProblem(
     ShootingStar.rhs_cr3bp_svstm!,
     params_ode,
 )
-ShootingStar.update_velocity_initial_guess!(prob)
 
 # solve innerloop
 # println("Solving inner-loop!")

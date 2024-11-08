@@ -53,14 +53,6 @@ mutable struct TwoStageShootingProblem
 end
 
 
-function update_velocity_initial_guess!(problem::TwoStageShootingProblem)
-    for i in 1:problem.Nseg
-        vi_guess = (problem.nodes[1:3,i+1] - problem.nodes[1:3,i])/(problem.times[i+1] - problem.times[i])
-        problem.nodes[4:6,i] = vi_guess
-    end
-end
-
-
 """
 Overload method for showing OptimalControlSCPProblem
 """
