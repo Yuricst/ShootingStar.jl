@@ -62,7 +62,7 @@ prob = ShootingStar.TwoStageShootingProblem(
 # _, residuals, J_inner = ShootingStar.propagate_nodes(prob, prob.nodes)
 
 # solve outerloop
-maxiter = 10
+maxiter = 20
 status, sols, residuals = ShootingStar.solve_outerloop!(
     prob,
     maxiter,

@@ -84,7 +84,7 @@ function solve_outerloop!(
         end
     end
 
-    if verbosity > 1
+    if verbosity >= 1
         println("")
         @printf("    Status : %s\n", string(status))
         println("")
