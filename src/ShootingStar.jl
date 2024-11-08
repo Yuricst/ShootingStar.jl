@@ -1,15 +1,13 @@
 module ShootingStar
 
+    using FiniteDiff
+    using LinearAlgebra
+    using OrdinaryDiffEq
+    using Printf
 
-using LinearAlgebra
-using DifferentialEquations
-using FiniteDiff
-
-
-include("twostage_shooting.jl")
-
-
-
-export twostage_shooting
+    include("eom.jl")
+    include("problem.jl")
+    include("innerloop.jl")
+    include("outerloop.jl")
 
 end # module
