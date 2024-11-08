@@ -16,7 +16,7 @@ function solve_outerloop!(
     status = :NotStarted
 
     if verbosity >= 1
-        @printf(" iter  |    res-norm   |\n")
+        @printf(" iter  |    res-norm   |  Improvement  |\n")
     end
     
     sols = []
@@ -63,6 +63,15 @@ function solve_outerloop!(
         F = reshape(residuals[4:6,:],3*problem.N)
         new_r_flat = r_flattened_intermediate - inv(transpose(DF)*DF)*transpose(DF) * F
 
+        # print information
+        if verbosity >= 1
+            @printf("  %3.0f  | %1.7e | %1.7e |\n",
+                it,
+                Fnorm_last,
+                abs(norm(F) - Fnorm_last) )
+        end
+        
+        # check convergence
         if abs(norm(F) - Fnorm_last) < eps_outer
             status = :Converged
             break
@@ -72,12 +81,6 @@ function solve_outerloop!(
 
         # store into nodes
         problem.nodes[1:3,2:end-1] = reshape(new_r_flat, 3, problem.N-2)
-
-        if verbosity >= 1
-            @printf("  %3.0f  | %1.7e |\n",
-                it,
-                Fnorm_last)
-        end
 
         if it == maxiter
             status = :MaxIterReached
