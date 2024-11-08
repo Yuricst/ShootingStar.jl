@@ -19,6 +19,9 @@ function initialguess_linear(rv0::Vector, rvf::Vector, times)
 end
 
 
+"""
+Construct initial guess by propagating initial and final states and gradually shifting weight
+"""
 function initialguess_gradual_transit(rv0, rvf, times, rhs!::Function, params_ode;
     method = Tsit5(), reltol = 1e-12, abstol = 1e-12)
     # propagate initial state
